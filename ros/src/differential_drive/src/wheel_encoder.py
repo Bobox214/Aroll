@@ -30,6 +30,7 @@ class WheelEncoder:
 		GPIO.add_event_detect(self.pinNameB,GPIO.BOTH,callback=self._tickUpdate)
 		# ROS publishers
 		self.pub_vel = rospy.Publisher('wheel_vel',Float64,queue_size=1)
+
 		self.initialized = True
 		rospy.loginfo("Node %s started"%self.nodeName)
 	

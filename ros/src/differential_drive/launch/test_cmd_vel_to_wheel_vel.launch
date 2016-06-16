@@ -1,0 +1,6 @@
+<launch>
+	<node name="cmd_vel_to_wheels_vel" pkg="differential_drive" type="cmd_vel_to_wheels_vel.py" output="screen">
+		<param name="base_width"  value="0.395"/>
+		<param name="timeout"     value="1.0" />
+	</node>
+</launch>
