@@ -23,11 +23,10 @@ class WheelEncoder:
 
 		# BeagleBone pin setup
 		self.cur_ticks  = 0
-		self.last_ticks = 0
 		GPIO.setup(self.pinNameA,GPIO.IN)
 		GPIO.setup(self.pinNameB,GPIO.IN)
-		GPIO.add_event_detect(self.pinNameA,GPIO.BOTH,callback=self._tickUpdate)
-		GPIO.add_event_detect(self.pinNameB,GPIO.BOTH,callback=self._tickUpdate)
+		GPIO.add_event_detect(self.pinNameA,GPIO.RISING,callback=self._tickUpdateA)
+		GPIO.add_event_detect(self.pinNameB,GPIO.RISING,callback=self._tickUpdateB)
 		# ROS publishers
 		self.pub_vel = rospy.Publisher('wheel_vel',Float64,queue_size=1)
 
@@ -44,15 +43,19 @@ class WheelEncoder:
 			rosRate.sleep()
 	
 	def spinOnce(self):
-		ticks_per_s =1.0*(self.cur_ticks-self.last_ticks)/(self.cur_time-self.last_time).to_sec()
+		ticks_per_s =1.0*self.cur_ticks/(self.cur_time-self.last_time).to_sec()
 		vel = ticks_per_s*self.m_per_tick 
 		#rospy.loginfo("%s:vel %f"%(self.nodeName,vel))
 		self.pub_vel.publish(vel)
-		self.last_time  = self.cur_time
-		self.last_ticks = self.cur_ticks
+		self.last_time = self.cur_time
+		self.cur_ticks = 0
 
-	def _tickUpdate(self,channel):
-		self.cur_ticks += 1
+	def _tickUpdateA(self,channel):
+		pinB = GPIO.input(self.pinNameB)
+		self.cur_ticks += 1 if pinB==0 else -1
+	def _tickUpdateB(self,channel):
+		pinA = GPIO.input(self.pinNameA)
+		self.cur_ticks += -1 if pinA==0 else 1
 		
 if __name__ == '__main__':
     wheelEncder = WheelEncoder()
