@@ -11,7 +11,7 @@ class WheelEncoder:
 		self.nodeName = rospy.get_name()
 		
 		# ROS parameters
-		self.rate     = rospy.get_param('~rate',10)
+		self.rate     = rospy.get_param('~rate',20)
 		tpr           = rospy.get_param('~ticks_per_rotation',0)
 		radius        = float(rospy.get_param('~wheel_radius',0))
 		self.pinNameA = rospy.get_param('~pinNameA','')
@@ -27,11 +27,12 @@ class WheelEncoder:
 		GPIO.setup(self.pinNameB,GPIO.IN)
 		GPIO.add_event_detect(self.pinNameA,GPIO.RISING,callback=self._tickUpdateA)
 		GPIO.add_event_detect(self.pinNameB,GPIO.RISING,callback=self._tickUpdateB)
+
 		# ROS publishers
 		self.pub_vel = rospy.Publisher('wheel_vel',Float64,queue_size=1)
 
 		self.initialized = True
-		rospy.loginfo("Node %s started"%self.nodeName)
+		rospy.loginfo("%s started"%self.nodeName)
 	
 	def spin(self):
 		if not self.initialized: return
@@ -45,7 +46,7 @@ class WheelEncoder:
 	def spinOnce(self):
 		ticks_per_s =1.0*self.cur_ticks/(self.cur_time-self.last_time).to_sec()
 		vel = ticks_per_s*self.m_per_tick 
-		#rospy.loginfo("%s:vel %f"%(self.nodeName,vel))
+		#rospy.loginfo("%s : vel %f"%(self.nodeName,vel))
 		self.pub_vel.publish(vel)
 		self.last_time = self.cur_time
 		self.cur_ticks = 0

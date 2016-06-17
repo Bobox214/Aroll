@@ -68,7 +68,7 @@ class PWM:
 	,	'P9_16' : ( 0 , 1 )
 	}
 	@staticmethod
-	def start(pinName):
+	def start(pinName,frequency,duty_cycle):
 		chipNb,subNb = PWM.pinNameMap[pinName]
 		if not os.path.exists('/sys/class/pwm/pwmchip%s/pwm%s'%(chipNb,subNb)):
 			if os.system("echo %s > /sys/class/pwm/pwmchip%s/export"%(subNb,chipNb)) != 0:
@@ -76,6 +76,17 @@ class PWM:
 		with open('/sys/class/pwm/pwmchip%s/pwm%s/enable'%(chipNb,subNb),'w') as f:
 			f.write(str(1))
 		PWM.pinStarted.add(pinName)
+		nsPeriod = int(1.0e9/frequency)
+		nsDuty   = int(nsPeriod*duty_cycle/100)
+		try:
+			with open('/sys/class/pwm/pwmchip%s/pwm%s/duty_cycle'%(chipNb,subNb),'w') as f:
+				f.write('0')
+		except IOError:
+			pass
+		with open('/sys/class/pwm/pwmchip%s/pwm%s/period'%(chipNb,subNb),'w') as f:
+			f.write(str(nsPeriod))
+		with open('/sys/class/pwm/pwmchip%s/pwm%s/duty_cycle'%(chipNb,subNb),'w') as f:
+			f.write(str(nsDuty))
 
 	@staticmethod
 	def stop(pinName):
@@ -87,7 +98,8 @@ class PWM:
 
 	@staticmethod
 	def set_duty_cycle(pinName,dutyCycle):
-		assert isinstance(dutyCycle,int) and dutyCycle>=0 and dutyCycle<=100
+		if not (isinstance(dutyCycle,int) and dutyCycle>=0 and dutyCycle<=100):
+			raise ValueError("duty_cyle : Expects an integer between 0 and 100 not <%s>:%s"%(type(dutyCycle),dutyCycle))
 		chipNb,subNb = PWM.pinNameMap[pinName]
 		with open('/sys/class/pwm/pwmchip%s/pwm%s/period'%(chipNb,subNb),'r') as f:
 			nsPeriod = int(f.read())

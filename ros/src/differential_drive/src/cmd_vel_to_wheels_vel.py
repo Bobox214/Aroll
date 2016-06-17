@@ -29,7 +29,6 @@ class TwistToMotors:
 	def spin(self):
 		if not self.initialized: return
 		rosRate = rospy.Rate(self.rate)
-		
 		while not rospy.is_shutdown():
 			if self.timeoutTime is not None:
 				if rospy.Time.now() > self.timeoutTime:
