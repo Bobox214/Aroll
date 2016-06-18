@@ -12,7 +12,7 @@ class MotorPid:
 		# ROS Parameter
 		self.Kp         = rospy.get_param('~Kp',200)
 		self.Ki         = rospy.get_param('~Ki',300)
-		self.Kd         = rospy.get_param('~Kd',30)
+		self.Kd         = rospy.get_param('~Kd',3)
 		self.rate       = rospy.get_param('~rate',20)
 		self.timeout    = rospy.Duration(rospy.get_param("~timeout", 0.2))
 		self.pinNameBwd = rospy.get_param('~pinNameFwd','')
@@ -82,6 +82,8 @@ class MotorPid:
 			motor = 100
 		elif motor < -100:
 			motor = -100
+		elif motor<0 and self.cmd_vel>0 or motor>0 and self.cmd_vel<0:
+			motor = 0
 		else:
 			# Only update total error for valid motor commands
 			self.total_error = iErr

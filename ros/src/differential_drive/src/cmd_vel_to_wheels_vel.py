@@ -24,7 +24,7 @@ class TwistToMotors:
 		rospy.Subscriber('cmd_vel', Twist, self.cmdVelUpdate)
 		
 		self.initialized = True
-		rospy.loginfo("Node %s started" % self.nodeName)
+		rospy.loginfo("%s started" % self.nodeName)
 		
 	def spin(self):
 		if not self.initialized: return
@@ -45,14 +45,14 @@ class TwistToMotors:
 		right = 1.0 * self.dx + self.dr * self.base_width / 2 
 		left  = 1.0 * self.dx - self.dr * self.base_width / 2
 				
-		rospy.loginfo("Node %s : pub l:%f r:%f"%(self.nodeName,left,right))
+		rospy.loginfo("%s : pub l:%f r:%f"%(self.nodeName,left,right))
 		
 		self.pub_lmotor.publish(left)
 		self.pub_rmotor.publish(right)
 			
 
 	def cmdVelUpdate(self,msg):
-		rospy.loginfo("Node %s : cmd_vel received"%self.nodeName)
+		#rospy.loginfo("%s : cmd_vel received"%self.nodeName)
 		self.timeoutTime = rospy.Time.now()+self.timeout
 		self.dx = msg.linear.x
 		self.dr = msg.angular.z

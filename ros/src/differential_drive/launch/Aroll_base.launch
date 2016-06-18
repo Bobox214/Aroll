@@ -1,0 +1,39 @@
+<launch>
+	<node name="cmd_vel_to_wheels_vel" pkg="differential_drive" type="cmd_vel_to_wheels_vel.py" output="screen">
+		<param name="base_width"  value="0.395"/>
+		<param name="timeout"     value="1.0" />
+		<remap from="left_wheel_cmd_vel"  to="left/cmd_vel"  />
+		<remap from="right_wheel_cmd_vel" to="right/cmd_vel" />
+	</node>
+	<group ns="left" >
+		<node name="wheel" pkg="differential_drive" type="wheel_encoder.py" output="screen">
+			<param name="pinNameA"           value="P9_15"  />
+			<param name="pinNameB"           value="P9_17"  />
+			<param name="ticks_per_rotation" value="1224"   />
+			<param name="wheel_radius"       value="0.0762" />
+			<param name="rate"               value="10"     />
+
+		</node>
+		<node name="motor" pkg="differential_drive" type="motor_pid.py" output="screen">
+			<param name="pinNameFwd"           value="P8_7"  />
+			<param name="pinNameBwd"           value="P8_9"  />
+			<param name="pinNameCmd"           value="P9_16" />
+			<param name="timeout"              value="5"     />
+			<param name="rate"                 value="10"    />
+		</node>
+	</group>
+	<group ns="right">
+		<node name="wheel" pkg="differential_drive" type="wheel_encoder.py" output="screen">
+			<param name="pinNameA"           value="P9_11"  />
+			<param name="pinNameB"           value="P9_13"  />
+			<param name="ticks_per_rotation" value="1224"   />
+			<param name="wheel_radius"       value="0.0762" />
+		</node>
+		<node name="motor" pkg="differential_drive" type="motor_pid.py" output="screen">
+			<param name="pinNameFwd"           value="P8_8"  />
+			<param name="pinNameBwd"           value="P8_10" />
+			<param name="pinNameCmd"           value="P9_14" />
+			<param name="timeout"              value="5"     />
+		</node>
+	</group>
+</launch>
