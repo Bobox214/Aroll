@@ -5,7 +5,9 @@ from geometry_msgs.msg import Twist
 
 class TwistToMotors:
 	initialized = False
-	def __init__(self):
+	def __init__(self,debug=False):
+		self.debug=debug
+
 		rospy.init_node("twist_to_motors")
 		self.nodeName = rospy.get_name()
 		
@@ -45,14 +47,16 @@ class TwistToMotors:
 		right = 1.0 * self.dx + self.dr * self.base_width / 2 
 		left  = 1.0 * self.dx - self.dr * self.base_width / 2
 				
-		rospy.loginfo("%s : pub l:%f r:%f"%(self.nodeName,left,right))
+		if self.debug:
+			rospy.loginfo("%s : pub l:%f r:%f"%(self.nodeName,left,right))
 		
 		self.pub_lmotor.publish(left)
 		self.pub_rmotor.publish(right)
 			
 
 	def cmdVelUpdate(self,msg):
-		#rospy.loginfo("%s : cmd_vel received"%self.nodeName)
+		if self.debug:
+			rospy.loginfo("%s : cmd_vel received"%self.nodeName)
 		self.timeoutTime = rospy.Time.now()+self.timeout
 		self.dx = msg.linear.x
 		self.dr = msg.angular.z

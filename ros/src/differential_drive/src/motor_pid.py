@@ -1,18 +1,21 @@
 #!/usr/bin/env python
+import sys
 import rospy
 from   std_msgs.msg  import Float64
 from   beaglebone.io import PWM, GPIO
 
 class MotorPid:
 	initialized = False
-	def __init__(self):
+	def __init__(self,debug=False):
+		self.debug = debug
+
 		rospy.init_node("motor_pid")
 		self.nodeName = rospy.get_name()
 
 		# ROS Parameter
-		self.Kp         = rospy.get_param('~Kp',200)
-		self.Ki         = rospy.get_param('~Ki',300)
-		self.Kd         = rospy.get_param('~Kd',3)
+		self.Kp         = rospy.get_param('~Kp',100)
+		self.Ki         = rospy.get_param('~Ki', 50)
+		self.Kd         = rospy.get_param('~Kd',0.1)
 		self.rate       = rospy.get_param('~rate',20)
 		self.timeout    = rospy.Duration(rospy.get_param("~timeout", 0.2))
 		self.pinNameBwd = rospy.get_param('~pinNameFwd','')
@@ -34,7 +37,7 @@ class MotorPid:
 		rospy.Subscriber("cmd_vel"  ,Float64,self.cmdVelUpdate)
 
 		self.initialized = True
-		rospy.loginfo("%s started"%self.nodeName)
+		rospy.loginfo("%s started%s"%(self.nodeName,' in debug mode' if self.debug else ''))
 
 	def reset(self):
 		self.cmd_vel     = 0
@@ -52,7 +55,8 @@ class MotorPid:
 			if self.timeoutTime is not None:
 				if rospy.Time.now() > self.timeoutTime:
 					self.timeoutTime = None
-					rospy.loginfo("%s : cmd_vel timeout"%self.nodeName)
+					if self.debug:
+						rospy.loginfo("%s : cmd_vel timeout"%self.nodeName)
 					self.cmd_vel = 0
 				self.spinOnce()
 			rosRate.sleep()
@@ -87,8 +91,9 @@ class MotorPid:
 		else:
 			# Only update total error for valid motor commands
 			self.total_error = iErr
-		rospy.loginfo("%s : cmd_vel %f wheel_vel %f motor %d"%(self.nodeName,self.cmd_vel,self.wheel_vel,motor))
-		rospy.loginfo("%s : P %d I %d D %d"%(self.nodeName,self.Kp*pErr,self.Ki*iErr,self.Kd*dErr))
+		if self.debug:
+			rospy.loginfo("%s : cmd_vel %f wheel_vel %f"%(self.nodeName,self.cmd_vel,self.wheel_vel))
+			rospy.loginfo("%s : P %d I %d D %d -> %d "%(self.nodeName,self.Kp*pErr,self.Ki*iErr,self.Kd*dErr,motor))
 		
 		# Writing
 		if motor == 0:
@@ -104,7 +109,8 @@ class MotorPid:
 		self.last_motor = motor
 		
 	def writeDirection(self,direction):
-		rospy.loginfo("%s : writeDirection %s"%(self.nodeName,'Fwd' if direction>0 else 'Bwd'))
+		if self.debug:
+			rospy.loginfo("%s : going %s"%(self.nodeName,'Fwd' if direction>0 else 'Bwd'))
 		if direction>0:
 			GPIO.output(self.pinNameFwd,1)
 			GPIO.output(self.pinNameBwd,0)
@@ -126,5 +132,5 @@ class MotorPid:
 		self.timeoutTime = rospy.Time.now()+self.timeout
 
 if __name__ == '__main__':
-    motorPid = MotorPid()
-    motorPid.spin()
+	motorPid = MotorPid(debug="--debug" in sys.argv)
+	motorPid.spin()
