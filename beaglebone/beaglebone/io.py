@@ -61,7 +61,6 @@ def waitSwitchStart(switchPin):
 	print("[I] Go Go Go !")
 
 class PWM(object):
-	_nsPeriods = {}
 	_pinNameMap = {
 		'P9_14' : ( 0 , 0 )
 	,	'P9_16' : ( 0 , 1 )
@@ -115,16 +114,14 @@ class PWM(object):
 		nsPeriod = int(1.0e9/frequency)
 		# Check other pin of the chip
 		otherPinNb = 0 if self.pinNb == 1 else 1
-		if (self.chipNb,otherPinNb) not in self._nsPeriods:
-			# Other pin not yet used. Ensure it is not exported to avoid period issues
-			# Can fail if already disabled
-			try:
-				with open('%s/unexport'%self.pwmChipDir,'w') as f:
-					f.write(str(otherPinNb))
-			except IOError: pass
-		elif nsPeriod != self._nsPeriods[self.chipNb,otherPinNb]:
+		try:
+			with open('%s/pwm%d/period'%(self.pwmChipDir,otherPinNb),'r') as f:
+				otherNsPeriod = int(f.read())
+		except IOError:
+			otherNsPeriod = None
+		if 0 and otherNsPeriod is not None and otherNsPeriod != nsPeriod:
 			raise ValueError("Pins using the same PWM chip must have the same frequency. Chip %d for pin %s is already configured with a frequency of %g Hz"%(
-				self.chipNb,self.pinName,1e9/self._nsPeriods[self.chipNb,otherPinNb]
+				self.chipNb,self.pinName,1e9/otherNsPeriod
 			))
 		# Disable dutyCycle, this can fail is period is 0
 		try:
@@ -132,9 +129,11 @@ class PWM(object):
 				f.write('0')
 		except IOError: pass
 		# Set period
-		with open('%s/period'%self.pwmDir,'w') as f:
-			f.write(str(nsPeriod))
-		self._nsPeriods[self.chipNb,self.pinNb] = nsPeriod
+		try:
+			with open('%s/period'%self.pwmDir,'w') as f:
+				f.write(str(nsPeriod))
+		except IOError:
+			raise IOError("Frequency cannot be set to %f Hz for pin %s. The other pin on the same chip is active and with another frequency"%(frequency,self.pinName))
 	
 	def getFrequency(self):
 		if not self._exported:
@@ -174,20 +173,19 @@ class PWM(object):
 		with open('%s/period'%self.pwmDir,'r') as f:
 			nsPeriod = int(f.read())
 		self._exported = True
-		self._nsPeriods[self.chipNb,self.pinNb] = nsPeriod
 
 	def unexport(self):
 		if not self._exported:
 			raise ValueError('Pin %s is not exported'%self.pinName)
+		if self.isEnabled():
+			self.disable()
 		with open('%s/unexport'%self.pwmChipDir,'w') as f:
 			f.write(str(self.pinNb))
 		self._exported = False
-		del self._nsPeriods[self.chipNb,self.pinNb]
 
 	def isExported(self):
 		return self._exported
 
-	def __destroy__(self):
+	def __del__(self):
 		if self._exported:
 			self.unexport()
-		
