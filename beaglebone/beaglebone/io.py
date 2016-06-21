@@ -60,76 +60,134 @@ def waitSwitchStart(switchPin):
 
 	print("[I] Go Go Go !")
 
-# Fake behaviour of PWM module while Adafruit_BBIO is updated for 4.4
-class PWM:
-	pinStarted = set()
-	pinNameMap = {
+class PWM(object):
+	_nsPeriods = {}
+	_pinNameMap = {
 		'P9_14' : ( 0 , 0 )
 	,	'P9_16' : ( 0 , 1 )
 	}
-	@staticmethod
-	def start(pinName,frequency,duty_cycle):
-		chipNb,subNb = PWM.pinNameMap[pinName]
-		if not os.path.exists('/sys/class/pwm/pwmchip%s/pwm%s'%(chipNb,subNb)):
-			if os.system("echo %s > /sys/class/pwm/pwmchip%s/export"%(subNb,chipNb)) != 0:
-				raise IOError("Can't start pinName %s chip %s sub %s"%(pinName,subNb,chipNb))
-		with open('/sys/class/pwm/pwmchip%s/pwm%s/enable'%(chipNb,subNb),'w') as f:
-			f.write(str(1))
-		PWM.pinStarted.add(pinName)
+	def __init__(self,pinName,frequency,dutyCycle=0,enable=True):
+		if pinName not in self._pinNameMap:
+			raise ValueError("Pin name %s is not supported for doing PWM"%pinName)
+		self._exported = False
+		self.pinName = pinName
+		self.chipNb,self.pinNb = self._pinNameMap[pinName]
+		self.pwmChipDir = "/sys/class/pwm/pwmchip%d"%(self.chipNb)
+		self.pwmDir     = "%s/pwm%d"%(self.pwmChipDir,self.pinNb)
+		# Handle overlay
+		overlayName = "BB-PWM%d"%self.chipNb
+		with open('/sys/devices/platform/bone_capemgr/slots','r') as f:
+			needOverlay = overlayName not in f.read()
+		if needOverlay:
+			try:
+				with open('/sys/devices/platform/bone_capemgr/slots','w') as f:
+					f.write(overlayName)
+			except IOError:
+				raise IOError("Overlay BB-PWM%d, required to use pin %s as PWM, cannot be added."%(self.chipNb,self.pinName))
+		self.export()
+		self.setFrequency(frequency)
+		self.setDutyCycle(dutyCycle)
+		if enable:
+			self.enable()
+
+	def enable(self):
+		if not self._exported:
+			raise ValueError('Pin %s is not exported'%self.pinName)
+		with open('%s/enable'%self.pwmDir,'w') as f:
+			f.write('1')
+
+	def disable(self):
+		if not self._exported:
+			raise ValueError('Pin %s is not exported'%self.pinName)
+		with open('%s/enable'%self.pwmDir,'w') as f:
+			f.write('0')
+
+	def isEnabled(self):
+		if not self._exported:
+			raise ValueError('Pin %s is not exported'%self.pinName)
+		with open('%s/enable'%self.pwmDir,'r') as f:
+			return  bool(f.read())
+
+	def setFrequency(self,frequency):
+		""" Change the frequency of the PWM for this pin. This always reset dutyCyle to 0 """
+		if not self._exported:
+			raise ValueError('Pin %s is not exported'%self.pinName)
 		nsPeriod = int(1.0e9/frequency)
-		nsDuty   = int(nsPeriod*duty_cycle/100)
+		# Check other pin of the chip
+		otherPinNb = 0 if self.pinNb == 1 else 1
+		if (self.chipNb,otherPinNb) not in self._nsPeriods:
+			# Other pin not yet used. Ensure it is not exported to avoid period issues
+			# Can fail if already disabled
+			try:
+				with open('%s/unexport'%self.pwmChipDir,'w') as f:
+					f.write(str(otherPinNb))
+			except IOError: pass
+		elif nsPeriod != self._nsPeriods[self.chipNb,otherPinNb]:
+			raise ValueError("Pins using the same PWM chip must have the same frequency. Chip %d for pin %s is already configured with a frequency of %g Hz"%(
+				self.chipNb,self.pinName,1e9/self._nsPeriods[self.chipNb,otherPinNb]
+			))
+		# Disable dutyCycle, this can fail is period is 0
 		try:
-			with open('/sys/class/pwm/pwmchip%s/pwm%s/duty_cycle'%(chipNb,subNb),'w') as f:
+			with open('%d/duty_cycle','w') as f:
 				f.write('0')
-		except IOError:
-			pass
-		with open('/sys/class/pwm/pwmchip%s/pwm%s/period'%(chipNb,subNb),'w') as f:
+		except IOError: pass
+		# Set period
+		with open('%s/period'%self.pwmDir,'w') as f:
 			f.write(str(nsPeriod))
-		with open('/sys/class/pwm/pwmchip%s/pwm%s/duty_cycle'%(chipNb,subNb),'w') as f:
-			f.write(str(nsDuty))
+		self._nsPeriods[self.chipNb,self.pinNb] = nsPeriod
+	
+	def getFrequency(self):
+		if not self._exported:
+			raise ValueError('Pin %s is not exported'%self.pinName)
+		with open('%s/period'%self.pwmDir,'r') as f:
+			nsPeriod = int(f.read())
+		return 1e9/nsPeriod
+		
 
-	@staticmethod
-	def stop(pinName):
-		chipNb,subNb = PWM.pinNameMap[pinName]
-		with open('/sys/class/pwm/pwmchip%s/pwm%s/enable'%(chipNb,subNb),'w') as f:
-			f.write(str(0))
-		os.system("echo %s > /sys/class/pwm/pwmchip%s/unexport"%(subNb,chipNb))
-		PWM.pinStarted.discard(pinName)
-
-	@staticmethod
-	def set_duty_cycle(pinName,dutyCycle):
+	def setDutyCycle(self,dutyCycle):
 		if not (isinstance(dutyCycle,int) and dutyCycle>=0 and dutyCycle<=100):
 			raise ValueError("duty_cyle : Expects an integer between 0 and 100 not <%s>:%s"%(type(dutyCycle),dutyCycle))
-		chipNb,subNb = PWM.pinNameMap[pinName]
-		with open('/sys/class/pwm/pwmchip%s/pwm%s/period'%(chipNb,subNb),'r') as f:
+		if not self._exported:
+			raise ValueError('Pin %s is not exported'%self.pinName)
+		with open('%s/period'%self.pwmDir,'r') as f:
 			nsPeriod = int(f.read())
 		nsDutyCycle = int(nsPeriod*dutyCycle/100)
-		if nsPeriod != 0:
-			try:
-				with open('/sys/class/pwm/pwmchip%s/pwm%s/duty_cycle'%(chipNb,subNb),'w') as f:
-					f.write(str(nsDutyCycle))
-			except:
-				print '[E] Could not set pin %s to duty_cycle (%s)'%(pinName,dutyCycle)
+		with open('%s/duty_cycle'%self.pwmDir,'w') as f:
+			f.write(str(nsDutyCycle))
+	
+	def getDutyCycle(self):
+		if not self._exported:
+			raise ValueError('Pin %s is not exported'%self.pinName)
+		with open('%s/period'%self.pwmDir,'r') as f:
+			nsPeriod = int(f.read())
+		with open('%s/duty_cycle'%self.pwmDir,'r') as f:
+			nsDuty   = int(f.read())
+		return int(100*nsDuty/nsPeriod)
 
-	@staticmethod
-	def set_frequency(pinName,frequency):
-		nsPeriod = int(1.0e9/frequency)
-		chipNb,subNb = PWM.pinNameMap[pinName]
-		with open('/sys/class/pwm/pwmchip%s/pwm%s/enable'%(chipNb,subNb),'w') as f:
-			f.write(str(0))
-		with open('/sys/class/pwm/pwmchip%s/pwm%s/duty_cycle'%(chipNb,subNb),'r') as f:
-			curNsDuty = int(f.read())
-		with open('/sys/class/pwm/pwmchip%s/pwm%s/period'%(chipNb,subNb),'r') as f:
-			curNsPeriod = int(f.read())
-		with open('/sys/class/pwm/pwmchip%s/pwm%s/duty_cycle'%(chipNb,subNb),'w') as f:
-			f.write('0')
-		with open('/sys/class/pwm/pwmchip%s/pwm%s/period'%(chipNb,subNb),'w') as f:
-			f.write(str(nsPeriod))
-		with open('/sys/class/pwm/pwmchip%s/pwm%s/duty_cycle'%(chipNb,subNb),'w') as f:
-			f.write(str(int(nsPeriod*curNsDuty/curNsPeriod)))
-		with open('/sys/class/pwm/pwmchip%s/pwm%s/enable'%(chipNb,subNb),'w') as f:
-			f.write(str(1))
-	@staticmethod
-	def cleanup():
-		for pinName in list(PWM.pinStarted):
-			PWM.stop(pinName)
+	def export(self):
+		if self._exported:
+			raise ValueError('Pin %s has already been exported'%self.pinName)
+		try:
+			with open('%s/export'%self.pwmChipDir,'w') as f:
+				f.write(str(self.pinNb))
+		except IOError: pass
+		with open('%s/period'%self.pwmDir,'r') as f:
+			nsPeriod = int(f.read())
+		self._exported = True
+		self._nsPeriods[self.chipNb,self.pinNb] = nsPeriod
+
+	def unexport(self):
+		if not self._exported:
+			raise ValueError('Pin %s is not exported'%self.pinName)
+		with open('%s/unexport'%self.pwmChipDir,'w') as f:
+			f.write(str(self.pinNb))
+		self._exported = False
+		del self._nsPeriods[self.chipNb,self.pinNb]
+
+	def isExported(self):
+		return self._exported
+
+	def __destroy__(self):
+		if self._exported:
+			self.unexport()
+		
