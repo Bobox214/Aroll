@@ -30,7 +30,7 @@ class MotorPid:
 		# BeagleBone pin setup
 		GPIO.setup(self.pinNameFwd,GPIO.OUT,initial=0)
 		GPIO.setup(self.pinNameBwd,GPIO.OUT,initial=0)
-		PWM.start(self.pinNameCmd,frequency=200,duty_cycle=0)
+		self.pwmCmd = PWM(self.pinNameCmd,frequency=200,dutyCycle=0,enable=1)
 
 		# ROS publisher/subscribers
 		rospy.Subscriber("wheel_vel",Float64,self.wheelVelUpdate)
@@ -105,7 +105,7 @@ class MotorPid:
 			pwm = abs(int(motor))
 			if pwm < self.minPwm:
 				pwm = self.minPwm
-			PWM.set_duty_cycle(self.pinNameCmd,pwm)
+			self.pwmCmd.setDutyCycle(pwm)
 		self.last_motor = motor
 		
 	def writeDirection(self,direction):
@@ -121,7 +121,7 @@ class MotorPid:
 	def stop(self):
 		GPIO.output(self.pinNameFwd,0)
 		GPIO.output(self.pinNameBwd,0)
-		PWM.set_duty_cycle(self.pinNameCmd,0)
+		self.pwmCmd.setDutyCycle(0)
 	
 	def wheelVelUpdate(self,msg):
 		self.wheel_vel = msg.data
