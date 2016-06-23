@@ -6,6 +6,12 @@
 		<remap from="left_wheel_cmd_vel"  to="left/cmd_vel"  />
 		<remap from="right_wheel_cmd_vel" to="right/cmd_vel" />
 	</node>
+	<node name="base_localizer" pkg="differential_drive" type="base_localizer.py" output="screen">
+		<param name="base_width"  value="0.395"/>
+		<param name="rate"        value="10"   />
+		<remap from="left_wheel_dst"  to="left/wheel_dst"  />
+		<remap from="right_wheel_dst" to="right/wheel_dst" />
+	</node>
 	<group ns="left" >
 		<node name="wheel" pkg="differential_drive" type="wheel_encoder.py" output="screen">
 			<param name="pinNameA"           value="P9_15"  />
@@ -13,7 +19,6 @@
 			<param name="ticks_per_rotation" value="1224"   />
 			<param name="wheel_radius"       value="0.0762" />
 			<param name="rate"               value="10"     />
-
 		</node>
 		<node name="motor" pkg="differential_drive" type="motor_pid.py" args="--debug" output="screen">
 			<param name="pinNameFwd"           value="P8_7"  />

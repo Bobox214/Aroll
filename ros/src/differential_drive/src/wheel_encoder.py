@@ -1,12 +1,14 @@
 #!/usr/bin/env python
-import math
+import sys,math
 import rospy
 from   std_msgs.msg  import Float64
 from   beaglebone.io import GPIO
 
 class WheelEncoder:
 	initialized = False
-	def __init__(self):
+	def __init__(self,debug=False):
+		self.debug = debug
+
 		rospy.init_node('wheel_encoder')
 		self.nodeName = rospy.get_name()
 		
@@ -30,9 +32,10 @@ class WheelEncoder:
 
 		# ROS publishers
 		self.pub_vel = rospy.Publisher('wheel_vel',Float64,queue_size=1)
+		self.pub_dst = rospy.Publisher('wheel_dst',Float64,queue_size=1)
 
 		self.initialized = True
-		rospy.loginfo("%s started"%self.nodeName)
+		rospy.loginfo("%s started%s"%(self.nodeName,' in debug mode' if self.debug else ''))
 	
 	def spin(self):
 		if not self.initialized: return
@@ -46,8 +49,9 @@ class WheelEncoder:
 	def spinOnce(self):
 		ticks_per_s =1.0*self.cur_ticks/(self.cur_time-self.last_time).to_sec()
 		vel = ticks_per_s*self.m_per_tick 
-		#rospy.loginfo("%s : vel %f"%(self.nodeName,vel))
 		self.pub_vel.publish(vel)
+		dst = self.cur_ticks*self.m_per_tick 
+		self.pub_dst.publish(dst)
 		self.last_time = self.cur_time
 		self.cur_ticks = 0
 
@@ -59,5 +63,5 @@ class WheelEncoder:
 		self.cur_ticks += -1 if pinA==0 else 1
 		
 if __name__ == '__main__':
-    wheelEncder = WheelEncoder()
-    wheelEncder.spin()
+    wheelEncoder = WheelEncoder(debug="--debug" in sys.argv)
+    wheelEncoder.spin()
