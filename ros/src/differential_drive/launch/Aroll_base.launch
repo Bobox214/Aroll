@@ -21,8 +21,8 @@
 			<param name="rate"               value="10"     />
 		</node>
 		<node name="motor" pkg="differential_drive" type="motor_pid.py" args="--debug" output="screen">
-			<param name="pinNameFwd"           value="P8_7"  />
-			<param name="pinNameBwd"           value="P8_9"  />
+			<param name="pinNameFwd"           value="P9_22"  />
+			<param name="pinNameBwd"           value="P9_21"  />
 			<param name="pinNameCmd"           value="P9_16" />
 			<param name="timeout"              value="2"     />
 			<param name="rate"                 value="10"    />
@@ -37,8 +37,8 @@
 			<param name="rate"               value="10"     />
 		</node>
 		<node name="motor" pkg="differential_drive" type="motor_pid.py" args="--debug" output="screen">
-			<param name="pinNameFwd"           value="P8_8"  />
-			<param name="pinNameBwd"           value="P8_10" />
+			<param name="pinNameFwd"           value="P9_23"  />
+			<param name="pinNameBwd"           value="P9_25" />
 			<param name="pinNameCmd"           value="P9_14" />
 			<param name="timeout"              value="2"     />
 			<param name="rate"               value="10"     />

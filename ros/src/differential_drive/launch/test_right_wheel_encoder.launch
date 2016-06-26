@@ -1,8 +1,0 @@
-<launch>
-	<node name="right_wheel" pkg="differential_drive" type="wheel_encoder.py" output="screen">
-		<param name="pinNameA"           value="P9_11"  />
-		<param name="pinNameB"           value="P9_13"  />
-		<param name="ticks_per_rotation" value="1224"   />
-		<param name="wheel_radius"       value="0.0762" />
-	</node>
-</launch>
