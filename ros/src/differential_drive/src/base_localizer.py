@@ -61,7 +61,7 @@ class BaseLocalizer:
 
 			dx = df*math.cos(self.yaw)
 			dy = df*math.sin(self.yaw)
-			dyaw = numpy.arctan2(self.dr-self.dl,self.base_width)
+			dyaw = numpy.arctan2(self.dl-self.dr,self.base_width)
 
 			if self.debug:
 				rospy.loginfo("%s : dr:%f dl:%f -> dx:%f dy:%f dyaw:%f"%(self.nodeName,self.dr,self.dl,dx,dy,dyaw))

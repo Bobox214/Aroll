@@ -13,7 +13,7 @@
 		<remap from="right_wheel_dst" to="right/wheel_dst" />
 	</node>
 	<group ns="left" >
-		<node name="wheel" pkg="differential_drive" type="wheel_encoder.py" output="screen">
+		<node name="wheel" pkg="differential_drive" type="wheel_encoder.py" args="--debug" output="screen">
 			<param name="pinNameA"           value="P9_15"  />
 			<param name="pinNameB"           value="P9_17"  />
 			<param name="ticks_per_rotation" value="1224"   />
@@ -29,7 +29,7 @@
 		</node>
 	</group>
 	<group ns="right">
-		<node name="wheel" pkg="differential_drive" type="wheel_encoder.py" output="screen">
+		<node name="wheel" pkg="differential_drive" type="wheel_encoder.py" args="--debug" output="screen">
 			<param name="pinNameA"           value="P9_11"  />
 			<param name="pinNameB"           value="P9_13"  />
 			<param name="ticks_per_rotation" value="1224"   />
