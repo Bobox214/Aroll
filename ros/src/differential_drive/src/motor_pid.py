@@ -13,9 +13,9 @@ class MotorPid:
 		self.nodeName = rospy.get_name()
 
 		# ROS Parameter
-		self.Kp         = rospy.get_param('~Kp',100)
-		self.Ki         = rospy.get_param('~Ki', 50)
-		self.Kd         = rospy.get_param('~Kd',0.1)
+		self.Kp         = rospy.get_param('~Kp', 80)
+		self.Ki         = rospy.get_param('~Ki', 150)
+		self.Kd         = rospy.get_param('~Kd',   0)
 		self.rate       = rospy.get_param('~rate',20)
 		self.timeout    = rospy.Duration(rospy.get_param("~timeout", 0.2))
 		self.pinNameBwd = rospy.get_param('~pinNameFwd','')
@@ -30,7 +30,7 @@ class MotorPid:
 		# BeagleBone pin setup
 		GPIO.setup(self.pinNameFwd,GPIO.OUT,initial=0)
 		GPIO.setup(self.pinNameBwd,GPIO.OUT,initial=0)
-		self.pwmCmd = PWM(self.pinNameCmd,frequency=200,dutyCycle=0,enable=1)
+		self.pwmCmd = PWM(self.pinNameCmd,frequency=100,dutyCycle=0,enable=1)
 
 		# ROS publisher/subscribers
 		rospy.Subscriber("wheel_vel",Float64,self.wheelVelUpdate)
@@ -76,7 +76,7 @@ class MotorPid:
 		dErr = (err-self.last_error)/dt
 		iErr = self.total_error + err*dt
 
-		motor = self.last_motor + self.Kp*pErr + self.Ki*iErr + self.Kd*dErr
+		motor = self.Kp*pErr + self.Ki*iErr + self.Kd*dErr
 
 		self.last_time   = cur_time
 		self.last_error  = err
@@ -92,8 +92,9 @@ class MotorPid:
 			# Only update total error for valid motor commands
 			self.total_error = iErr
 		if self.debug:
-			rospy.loginfo("%s : cmd_vel %f wheel_vel %f"%(self.nodeName,self.cmd_vel,self.wheel_vel))
-			rospy.loginfo("%s : P %d I %d D %d -> %d "%(self.nodeName,self.Kp*pErr,self.Ki*iErr,self.Kd*dErr,motor))
+			rospy.loginfo("%s : cmd_vel %f wheel_vel %f ; P %d I %d D %d -> %d"%(
+				self.nodeName,self.cmd_vel,self.wheel_vel,self.Kp*pErr,self.Ki*iErr,self.Kd*dErr,motor)
+			)
 		
 		# Writing
 		if motor == 0:
@@ -103,8 +104,6 @@ class MotorPid:
 				# Motor command has changed direction
 				self.writeDirection(motor)
 			pwm = abs(int(motor))
-			if pwm < self.minPwm:
-				pwm = self.minPwm
 			self.pwmCmd.setDutyCycle(pwm)
 		self.last_motor = motor
 		

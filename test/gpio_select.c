@@ -7,15 +7,18 @@
 
 #define MEAN_NB 3 // On how many ticks are we doing a meaning.
 
-// Global make it easier for the thread communication
-long int count = 0;
-int bwdCount = 0;
-int fdA,fdB;
+struct count_t {
+	int fdA;
+	int fdB;
+	long int count;
+	long int bwdCount;
+};
 
 void* encoderCount(void *arg) {
     char buffer[2];
 	int inc;
     fd_set fds;
+	count_t* count = (count_t*) arg;
 
     while (1) {
 		int fwd=0;
@@ -24,31 +27,31 @@ void* encoderCount(void *arg) {
 			// Preparer la table des evenements exceptionnels attendus
 			FD_ZERO(& fds);
 			// Avec uniquement le descripteur du fichier.
-			FD_SET(fdA, & fds);
+			FD_SET(count->fdA, & fds);
 			// Attente passive (pas de timeout, donc infinie...
-			if (select(fdA+1, NULL, NULL, & fds, NULL) < 0) {
+			if (select(count->fdA+1, NULL, NULL, & fds, NULL) < 0) {
 				perror("select");
 				break;
 			}
-			if (read(fdB, & buffer, 2) != 2) {
+			if (read(count->fdB, & buffer, 2) != 2) {
 				perror("read");
 				break;
 			}
-			lseek(fdB, 0, SEEK_SET);
+			lseek(count->fdB, 0, SEEK_SET);
 			if (buffer[0]=='0') fwd++;
 			else                bwd++;
 
-			if (read(fdA, & buffer, 2) != 2) {
+			if (read(count->fdA, & buffer, 2) != 2) {
 				perror("read");
 				break;
 			}
-			lseek(fdA, 0, SEEK_SET);
+			lseek(count->fdA, 0, SEEK_SET);
 		}
 		if (fwd>bwd)
-			count += MEAN_NB;
+			count->count += MEAN_NB;
 		else {
-			count -= MEAN_NB;
-			bwdCount += MEAN_NB;
+			count->count -= MEAN_NB;
+			count->bwdCount += MEAN_NB;
 		}
     }
     return NULL;
@@ -57,23 +60,26 @@ void* encoderCount(void *arg) {
 int main(int argc, char * argv[])
 {
 	pthread_t tid;
+	count_t* count = new count_t();
     if (argc != 3) {
         fprintf(stderr, "usage: %s \n", argv[0]);
         exit(EXIT_FAILURE);
     }
-    if ((fdA = open(argv[1], O_RDONLY)) < 0) {
+    if ((count->fdA = open(argv[1], O_RDONLY)) < 0) {
         perror(argv[1]);
         exit(EXIT_FAILURE);
     }
-    if ((fdB = open(argv[2], O_RDONLY)) < 0) {
+    if ((count->fdB = open(argv[2], O_RDONLY)) < 0) {
         perror(argv[2]);
         exit(EXIT_FAILURE);
     }
+	count->count = 0;
+	count->bwdCount = 0;
 
-	pthread_create(&tid, NULL, &encoderCount, NULL);
+	pthread_create(&tid, NULL, &encoderCount, (void*)count);
     while (1) {
 		sleep(1);
-		fprintf(stdout,"%ld - %d\n",count,bwdCount);
+		fprintf(stdout,"%ld - %ld\n",count->count,count->bwdCount);
     }
     return EXIT_SUCCESS;
 }

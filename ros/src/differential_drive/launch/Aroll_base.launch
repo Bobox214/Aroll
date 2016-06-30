@@ -13,14 +13,14 @@
 		<remap from="right_wheel_dst" to="right/wheel_dst" />
 	</node>
 	<group ns="left" >
-		<node name="wheel" pkg="differential_drive" type="wheel_encoder.py" args="--debug" output="screen">
+		<node name="wheel" pkg="differential_drive" type="wheel_encoder" output="screen">
 			<param name="pinNameA"           value="P9_15"  />
-			<param name="pinNameB"           value="P9_17"  />
-			<param name="ticks_per_rotation" value="1224"   />
+			<param name="pinNameB"           value="P9_13"  />
+			<param name="ticks_per_rotation" value="612"    />
 			<param name="wheel_radius"       value="0.0762" />
 			<param name="rate"               value="10"     />
 		</node>
-		<node name="motor" pkg="differential_drive" type="motor_pid.py" args="--debug" output="screen">
+		<node name="motor" pkg="differential_drive" type="motor_pid.py" output="screen">
 			<param name="pinNameFwd"           value="P9_22"  />
 			<param name="pinNameBwd"           value="P9_21"  />
 			<param name="pinNameCmd"           value="P9_16" />
@@ -29,14 +29,14 @@
 		</node>
 	</group>
 	<group ns="right">
-		<node name="wheel" pkg="differential_drive" type="wheel_encoder.py" args="--debug" output="screen">
-			<param name="pinNameA"           value="P9_11"  />
-			<param name="pinNameB"           value="P9_13"  />
-			<param name="ticks_per_rotation" value="1224"   />
+		<node name="wheel" pkg="differential_drive" type="wheel_encoder" output="screen">
+			<param name="pinNameA"           value="P9_12"  />
+			<param name="pinNameB"           value="P9_11"  />
+			<param name="ticks_per_rotation" value="612"    />
 			<param name="wheel_radius"       value="0.0762" />
 			<param name="rate"               value="10"     />
 		</node>
-		<node name="motor" pkg="differential_drive" type="motor_pid.py" args="--debug" output="screen">
+		<node name="motor" pkg="differential_drive" type="motor_pid.py" output="screen">
 			<param name="pinNameFwd"           value="P9_23"  />
 			<param name="pinNameBwd"           value="P9_25" />
 			<param name="pinNameCmd"           value="P9_14" />

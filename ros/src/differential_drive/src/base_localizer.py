@@ -19,12 +19,13 @@ class BaseLocalizer:
 			rospy.logfatal("Parameter base_width is required")
 			return
 
-		# ROS publisher/subscribers
+		self.reset()
+
+		# ROS topics
 		rospy.Subscriber("left_wheel_dst" ,Float64,self.leftWheelDstUpdate)
 		rospy.Subscriber("right_wheel_dst",Float64,self.rightWheelDstUpdate)
 		self.pub_pose = rospy.Publisher("pose",Pose,queue_size=1)
 
-		self.reset()
 		self.initialized = True
 		rospy.loginfo("%s started%s"%(self.nodeName,' in debug mode' if self.debug else ''))
 

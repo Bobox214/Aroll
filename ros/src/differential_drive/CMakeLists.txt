@@ -6,6 +6,7 @@ project(differential_drive)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
+  roscpp
   rospy
   std_msgs
 )
@@ -128,16 +129,16 @@ include_directories(
 # add_dependencies(differential_drive ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
-# add_executable(differential_drive_node src/differential_drive_node.cpp)
+add_executable(wheel_encoder src/wheel_encoder.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-# add_dependencies(differential_drive_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(wheel_encoder ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(differential_drive_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(wheel_encoder
+  ${catkin_LIBRARIES}
+)
 
 #############
 ## Install ##
