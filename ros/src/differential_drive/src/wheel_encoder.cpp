@@ -17,6 +17,7 @@ struct count_t {
 	int fdA;
 	int fdB;
 	long int cur_ticks;
+	long int fwd_ticks;
 	long int bwd_ticks;
 };
 
@@ -51,9 +52,10 @@ void* encoderCount(void *arg) {
 			}
 			lseek(count->fdA, 0, SEEK_SET);
 		}
-		if (fwd>bwd)
+		if (fwd>bwd) {
 			count->cur_ticks += MEAN_NB;
-		else {
+			count->fwd_ticks += MEAN_NB;
+		} else {
 			count->cur_ticks -= MEAN_NB;
 			count->bwd_ticks += MEAN_NB;
 		}
@@ -96,7 +98,7 @@ int main(int argc, char **argv) {
 
 	ros::init(argc, argv, "wheel_encoder");
 
-	ros::NodeHandle n;
+	ros::NodeHandle nh;
 	string nodeName = ros::this_node::getName();
 
 	// ROS parameters
@@ -142,8 +144,8 @@ int main(int argc, char **argv) {
 	pthread_create(&tid, NULL, &encoderCount, (void*)count);
 
 	// ROS topics
-	ros::Publisher pub_vel = n.advertise<std_msgs::Float64>("wheel_vel", 1);
-	ros::Publisher pub_dst = n.advertise<std_msgs::Float64>("wheel_dst", 10);
+	ros::Publisher pub_vel = nh.advertise<std_msgs::Float64>("wheel_vel", 1);
+	ros::Publisher pub_dst = nh.advertise<std_msgs::Float64>("wheel_dst", 10);
 
 	ROS_INFO("%s started",nodeName.c_str());
 
@@ -154,6 +156,7 @@ int main(int argc, char **argv) {
 	std_msgs::Float64 vel;
 	std_msgs::Float64 dst;
 
+	int nLoop=0;
 	while (ros::ok()) {
 		cur_time = ros::Time::now();
 		double ticks_per_s = count->cur_ticks/(cur_time-last_time).toSec();
@@ -163,8 +166,14 @@ int main(int argc, char **argv) {
 		pub_dst.publish(dst);
 		last_time = cur_time;
 		count->cur_ticks = 0;
+		// Debug, keep total counts
+		nLoop++;
+		if (nLoop==20) {
+			ROS_DEBUG("%s : Fwd %ld , Bwd %ld",nodeName.c_str(),count->fwd_ticks,count->bwd_ticks);
+			nLoop=0;
+		}
 		rosRate.sleep();
 	}
-	//closeGpio(gpioA);
-	//closeGpio(gpioB);
+	closeGpio(gpioA);
+	closeGpio(gpioB);
 }

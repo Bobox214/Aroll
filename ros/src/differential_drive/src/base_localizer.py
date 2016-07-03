@@ -6,8 +6,7 @@ from   geometry_msgs.msg  import Pose
 
 class BaseLocalizer:
 	initialized = False
-	def __init__(self,debug=False):
-		self.debug = debug
+	def __init__(self):
 
 		rospy.init_node("base_localizer")
 		self.nodeName = rospy.get_name()
@@ -27,7 +26,7 @@ class BaseLocalizer:
 		self.pub_pose = rospy.Publisher("pose",Pose,queue_size=1)
 
 		self.initialized = True
-		rospy.loginfo("%s started%s"%(self.nodeName,' in debug mode' if self.debug else ''))
+		rospy.loginfo("%s started",self.nodeName)
 
 	def reset(self):
 		self.dl        = 0
@@ -64,8 +63,7 @@ class BaseLocalizer:
 			dy = df*math.sin(self.yaw)
 			dyaw = numpy.arctan2(self.dl-self.dr,self.base_width)
 
-			if self.debug:
-				rospy.loginfo("%s : dr:%f dl:%f -> dx:%f dy:%f dyaw:%f"%(self.nodeName,self.dr,self.dl,dx,dy,dyaw))
+			rospy.logdebug("%s : dr:%f dl:%f -> dx:%f dy:%f dyaw:%f",self.nodeName,self.dr,self.dl,dx,dy,dyaw)
 				
 			self.pose.position.x += dx
 			self.pose.position.y += dy
@@ -88,5 +86,5 @@ class BaseLocalizer:
 		self.dr += msg.data
 
 if __name__ == '__main__':
-	baseLocalizer = BaseLocalizer(debug="--debug" in sys.argv)
+	baseLocalizer = BaseLocalizer()
 	baseLocalizer.spin()

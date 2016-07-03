@@ -1,5 +1,5 @@
 <launch>
-	<node name="base_localizer" pkg="differential_drive" type="base_localizer.py" args="--debug" output="screen">
+	<node name="base_localizer" pkg="differential_drive" type="base_localizer.py" output="screen">
 		<param name="base_width"  value="0.395"/>
 		<param name="rate"        value="10"   />
 	</node>

@@ -5,7 +5,7 @@
 		<param name="ticks_per_rotation" value="612"   />
 		<param name="wheel_radius"       value="0.0762" />
 	</node>
-	<node name="right_motor" pkg="differential_drive" type="motor_pid.py" args="--debug" output="screen">
+	<node name="right_motor" pkg="differential_drive" type="motor_pid.py" output="screen">
 		<param name="pinNameFwd"           value="P9_23"  />
 		<param name="pinNameBwd"           value="P9_25" />
 		<param name="pinNameCmd"           value="P9_14" />
