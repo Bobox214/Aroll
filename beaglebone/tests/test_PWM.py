@@ -28,5 +28,21 @@ class TestPWM(unittest.TestCase):
 		self.assertEqual(pwm.getFrequency(),20000)
 		self.assertEqual(pwm.getDutyCycle(),10)
 
+	def test_P8_19(self):
+		self.clean()
+		pwm = PWM('P8_19',200,0)
+		self.assertTrue(pwm.isExported())
+		self.assertTrue(pwm.isEnabled())
+		self.assertEqual(pwm.getFrequency(),200)
+		self.assertEqual(pwm.getDutyCycle(),0)
+
+	def test_P8_13(self):
+		self.clean()
+		pwm = PWM('P8_13',200,100)
+		self.assertTrue(pwm.isExported())
+		self.assertTrue(pwm.isEnabled())
+		self.assertEqual(pwm.getFrequency(),200)
+		self.assertEqual(pwm.getDutyCycle(),100)
+
 if __name__=='__main__':
 	unittest.main()

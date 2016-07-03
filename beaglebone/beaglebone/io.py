@@ -62,19 +62,19 @@ def waitSwitchStart(switchPin):
 
 class PWM(object):
 	_pinNameMap = {
-		'P9_14' : ( 0 , 0 )
-	,	'P9_16' : ( 0 , 1 )
+		'P9_14' : ( 1 , 0 , '/sys/devices/platform/ocp/48302000.epwmss/48302200.ehrpwm/pwm')
+	,	'P9_16' : ( 1 , 1 , '/sys/devices/platform/ocp/48302000.epwmss/48302200.ehrpwm/pwm')
+	,	'P8_19' : ( 2 , 0 , '/sys/devices/platform/ocp/48304000.epwmss/48304200.ehrpwm/pwm')
+	,	'P8_13' : ( 2 , 1 , '/sys/devices/platform/ocp/48304000.epwmss/48304200.ehrpwm/pwm')
 	}
 	def __init__(self,pinName,frequency,dutyCycle=0,enable=True):
 		if pinName not in self._pinNameMap:
 			raise ValueError("Pin name %s is not supported for doing PWM"%pinName)
 		self._exported = False
 		self.pinName = pinName
-		self.chipNb,self.pinNb = self._pinNameMap[pinName]
-		self.pwmChipDir = "/sys/class/pwm/pwmchip%d"%(self.chipNb)
-		self.pwmDir     = "%s/pwm%d"%(self.pwmChipDir,self.pinNb)
+		self.pwmNb,self.pinNb,self.pwmPath = self._pinNameMap[pinName]
 		# Handle overlay
-		overlayName = "BB-PWM%d"%self.chipNb
+		overlayName = "BB-PWM%d"%self.pwmNb
 		with open('/sys/devices/platform/bone_capemgr/slots','r') as f:
 			needOverlay = overlayName not in f.read()
 		if needOverlay:
@@ -82,7 +82,20 @@ class PWM(object):
 				with open('/sys/devices/platform/bone_capemgr/slots','w') as f:
 					f.write(overlayName)
 			except IOError:
-				raise IOError("Overlay BB-PWM%d, required to use pin %s as PWM, cannot be added."%(self.chipNb,self.pinName))
+				raise IOError("Overlay BB-PWM%d, provided by https://github.com/beagleboard/bb.org-overlays, required by this library to use pin %s as PWM, cannot be added."%(self.pwmNb,self.pinName))
+		# Check the pwmPath exists, allow to wait if overlay was just added by another PWM object.
+		c = 0
+		while not os.path.exists(self.pwmPath) and c<=10:
+			sleep(0.5)
+			c += 1
+		if c==10:
+			raise IOError("Overlay BB-PWM%d, provided by https://github.com/beagleboard/bb.org-overlays, required by this library to use pin %s as PWM, cannot be loaded."%(self.pwmNb,self.pinName))
+		#Find the generated pwnChipX dir
+		lsL = os.listdir(self.pwmPath)
+		if len(lsL)!=1:
+			raise IOError("Unexpected content in directory %s, expected one and only one directory after overlay loading",self.pwmPath)
+		self.pwmChipDir = os.path.join(self.pwmPath,lsL[0])
+		self.pwmDir     = "%s/pwm%d"%(self.pwmChipDir,self.pinNb)
 		self.export()
 		self.setFrequency(frequency)
 		self.setDutyCycle(dutyCycle)
@@ -120,8 +133,8 @@ class PWM(object):
 		except IOError:
 			otherNsPeriod = None
 		if 0 and otherNsPeriod is not None and otherNsPeriod != nsPeriod:
-			raise ValueError("Pins using the same PWM chip must have the same frequency. Chip %d for pin %s is already configured with a frequency of %g Hz"%(
-				self.chipNb,self.pinName,1e9/otherNsPeriod
+			raise ValueError("Pins using the same PWM chip must have the same frequency. PWM %d for pin %s is already configured with a frequency of %g Hz"%(
+				self.pwmNb,self.pinName,1e9/otherNsPeriod
 			))
 		# Disable dutyCycle, this can fail is period is 0
 		try:
