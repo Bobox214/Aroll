@@ -77,7 +77,7 @@ class BaseLocalizer:
 			
 			self.dl = 0
 			self.dr = 0
-			self.pub_pose.publish(self.pose)
+		self.pub_pose.publish(self.pose)
 
 	def leftWheelDstUpdate(self,msg):
 		self.dl += msg.data

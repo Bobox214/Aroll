@@ -1,0 +1,54 @@
+<launch>
+	<node name="go_to_goal" pkg="differential_drive" type="go_to_goal.py" >
+		<param name="base_width"  value="0.395"/>
+		<param name="kP"          value="0.5"  />
+		<param name="rate"        value="10"   />
+		<param name="v_max"       value="0.2"  />
+		<param name="w_max"       value="1"    />
+	</node>
+	<node name="cmd_vel_to_wheels_vel" pkg="differential_drive" type="cmd_vel_to_wheels_vel.py" >
+		<param name="base_width"  value="0.395"/>
+		<param name="timeout"     value="2.0"  />
+		<param name="rate"        value="10"   />
+		<remap from="left_wheel_cmd_vel"  to="left/cmd_vel"  />
+		<remap from="right_wheel_cmd_vel" to="right/cmd_vel" />
+	</node>
+	<node name="base_localizer" pkg="differential_drive" type="base_localizer.py" >
+		<param name="base_width"  value="0.395"/>
+		<param name="rate"        value="10"   />
+		<remap from="left_wheel_dst"  to="left/wheel_dst"  />
+		<remap from="right_wheel_dst" to="right/wheel_dst" />
+	</node>
+	<group ns="left" >
+		<node name="wheel" pkg="differential_drive" type="wheel_encoder" >
+			<param name="pinNameA"           value="P9_15"  />
+			<param name="pinNameB"           value="P9_13"  />
+			<param name="ticks_per_rotation" value="612"    />
+			<param name="wheel_radius"       value="0.0762" />
+			<param name="rate"               value="10"     />
+		</node>
+		<node name="motor" pkg="differential_drive" type="motor_pid.py" >
+			<param name="pinNameFwd"           value="P9_22"  />
+			<param name="pinNameBwd"           value="P9_21"  />
+			<param name="pinNameCmd"           value="P9_16" />
+			<param name="timeout"              value="2"     />
+			<param name="rate"                 value="10"    />
+		</node>
+	</group>
+	<group ns="right">
+		<node name="wheel" pkg="differential_drive" type="wheel_encoder" >
+			<param name="pinNameA"           value="P9_12"  />
+			<param name="pinNameB"           value="P9_11"  />
+			<param name="ticks_per_rotation" value="612"    />
+			<param name="wheel_radius"       value="0.0762" />
+			<param name="rate"               value="10"     />
+		</node>
+		<node name="motor" pkg="differential_drive" type="motor_pid.py" >
+			<param name="pinNameFwd"           value="P9_23"  />
+			<param name="pinNameBwd"           value="P9_25" />
+			<param name="pinNameCmd"           value="P9_14" />
+			<param name="timeout"              value="2"     />
+			<param name="rate"               value="10"     />
+		</node>
+	</group>
+</launch>
