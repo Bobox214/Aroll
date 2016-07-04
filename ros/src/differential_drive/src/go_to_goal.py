@@ -64,7 +64,7 @@ class GoToGoal:
 				w = -self.Kp*errYaw
 				if abs(w)>self.w_max:
 					w = self.w_max*(abs(w)/w)
-				if abs(w)<0.75:
+				if abs(errYaw)<0.75:
 					v = self.v_max / ( abs(w) + 1 )**0.5
 				else:
 					v = 0

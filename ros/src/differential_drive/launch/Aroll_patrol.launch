@@ -1,9 +1,8 @@
 <launch>
 	<node name="go_to_goal" pkg="differential_drive" type="go_to_goal.py" >
-		<param name="base_width"  value="0.395"/>
 		<param name="kP"          value="0.5"  />
 		<param name="rate"        value="10"   />
-		<param name="v_max"       value="0.2"  />
+		<param name="v_max"       value="0.5"  />
 		<param name="w_max"       value="1"    />
 	</node>
 	<node name="cmd_vel_to_wheels_vel" pkg="differential_drive" type="cmd_vel_to_wheels_vel.py" >

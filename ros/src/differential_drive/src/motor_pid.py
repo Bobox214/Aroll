@@ -11,7 +11,7 @@ class MotorPid:
 		self.nodeName = rospy.get_name()
 
 		# ROS Parameter
-		self.Kp         = rospy.get_param('~Kp', 80)
+		self.Kp         = rospy.get_param('~Kp', 100)
 		self.Ki         = rospy.get_param('~Ki', 150)
 		self.Kd         = rospy.get_param('~Kd',   0)
 		self.rate       = rospy.get_param('~rate',20)
@@ -121,6 +121,9 @@ class MotorPid:
 
 	def cmdVelUpdate(self,msg):
 		self.cmd_vel = msg.data
+		if self.cmd_vel*self.wheel_vel<0:
+			# We are changing direction reset accumulated error
+			self.total_error = 0
 		self.last_time   = rospy.Time.now()
 		self.timeoutTime = rospy.Time.now()+self.timeout
 
