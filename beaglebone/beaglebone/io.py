@@ -62,17 +62,17 @@ def waitSwitchStart(switchPin):
 
 class PWM(object):
 	_pinNameMap = {
-		'P9_14' : ( 1 , 0 , '/sys/devices/platform/ocp/48302000.epwmss/48302200.ehrpwm/pwm')
-	,	'P9_16' : ( 1 , 1 , '/sys/devices/platform/ocp/48302000.epwmss/48302200.ehrpwm/pwm')
-	,	'P8_19' : ( 2 , 0 , '/sys/devices/platform/ocp/48304000.epwmss/48304200.ehrpwm/pwm')
-	,	'P8_13' : ( 2 , 1 , '/sys/devices/platform/ocp/48304000.epwmss/48304200.ehrpwm/pwm')
+		'P9_14' : ( 1 , 0 , '/sys/devices/platform/ocp/','48302000','48302200')
+	,	'P9_16' : ( 1 , 1 , '/sys/devices/platform/ocp/','48302000','48302200')
+	,	'P8_19' : ( 2 , 0 , '/sys/devices/platform/ocp/','48304000','48304200')
+	,	'P8_13' : ( 2 , 1 , '/sys/devices/platform/ocp/','48304000','48304200')
 	}
 	def __init__(self,pinName,frequency,dutyCycle=0,enable=True):
 		if pinName not in self._pinNameMap:
 			raise ValueError("Pin name %s is not supported for doing PWM"%pinName)
 		self._exported = False
 		self.pinName = pinName
-		self.pwmNb,self.pinNb,self.pwmPath = self._pinNameMap[pinName]
+		self.pwmNb,self.pinNb,ocpPath,addr1,addr2 = self._pinNameMap[pinName]
 		# Handle overlay
 		overlayName = "BB-PWM%d"%self.pwmNb
 		with open('/sys/devices/platform/bone_capemgr/slots','r') as f:
@@ -85,11 +85,31 @@ class PWM(object):
 				raise IOError("Overlay BB-PWM%d, provided by https://github.com/beagleboard/bb.org-overlays, required by this library to use pin %s as PWM, cannot be added."%(self.pwmNb,self.pinName))
 		# Check the pwmPath exists, allow to wait if overlay was just added by another PWM object.
 		c = 0
-		while not os.path.exists(self.pwmPath) and c<=10:
+		while True:
+			lsL = os.listdir(ocpPath)
+			addr1L = [x for x in lsL if x.startswith(addr1)]
+			if len(addr1L) == 1:
+				break
 			sleep(0.5)
 			c += 1
+			if c==10:
+				break
 		if c==10:
 			raise IOError("Overlay BB-PWM%d, provided by https://github.com/beagleboard/bb.org-overlays, required by this library to use pin %s as PWM, cannot be loaded."%(self.pwmNb,self.pinName))
+		addr1Path = os.path.join(ocpPath,addr1L[0])
+		c = 0
+		while True:
+			lsL = os.listdir(addr1Path)
+			addr2L = [x for x in lsL if x.startswith(addr2)]
+			if len(addr2L) == 1:
+				break
+			sleep(0.5)
+			c += 1
+			if c==10:
+				break
+		if c==10:
+			raise IOError("Overlay BB-PWM%d, provided by https://github.com/beagleboard/bb.org-overlays, required by this library to use pin %s as PWM, cannot be loaded."%(self.pwmNb,self.pinName))
+		self.pwmPath = os.path.join(addr1Path,addr2L[0],'pwm')
 		#Find the generated pwnChipX dir
 		lsL = os.listdir(self.pwmPath)
 		if len(lsL)!=1:
