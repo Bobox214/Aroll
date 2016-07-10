@@ -1,5 +1,5 @@
 <launch>
-	<node name="left_wheel" pkg="differential_drive" type="wheel_encoder" output="screen">
+	<node name="left_wheel" pkg="differential_drive" type="wheel_encoder">
 		<param name="pinNameA"           value="P9_15"  />
 		<param name="pinNameB"           value="P9_13"  />
 		<param name="ticks_per_rotation" value="612"    />
@@ -7,7 +7,7 @@
 		<param name="rate"               value="10"     />
 
 	</node>
-	<node name="left_motor" pkg="differential_drive" type="motor_pid.py" output="screen">
+	<node name="left_motor" pkg="differential_drive" type="motor_pid.py">
 		<param name="pinNameFwd"           value="P9_22"  />
 		<param name="pinNameBwd"           value="P9_21"  />
 		<param name="pinNameCmd"           value="P9_16" />

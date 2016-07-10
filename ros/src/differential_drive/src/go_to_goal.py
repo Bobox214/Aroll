@@ -82,7 +82,7 @@ class GoToGoal:
 		self.goal = Pose()
 		self.goal.position.x = float(msg.data%100)
 		self.goal.position.y = float(msg.data/100)
-		rospy.loginfo("%s Cmg goal set : x:%f y:%f",self.nodeName,self.goal.position.x,self.goal.position.y)
+		rospy.loginfo("%s Cmd goal set : x:%f y:%f",self.nodeName,self.goal.position.x,self.goal.position.y)
 
 
 if __name__ == '__main__':
